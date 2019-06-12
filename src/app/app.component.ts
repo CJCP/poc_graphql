@@ -1,6 +1,10 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { TodoService } from './todo.service';
 import { Subscription, Observable } from 'rxjs';
+import { QueryRef } from 'apollo-angular';
+import { map } from 'rxjs/operators';
+import gql from 'graphql-tag';
+
 
 @Component({
   selector: 'app-root',
@@ -9,18 +13,47 @@ import { Subscription, Observable } from 'rxjs';
 })
 
 export class AppComponent implements OnInit {
-  private todoList: Observable<Array<String>>;
+  private todoList: Observable<Array<String>>
   todo: String;
 
-  constructor(private todoAPI: TodoService) { }
+  constructor(private todoAPI: TodoService) {
+
+  }
 
   ngOnInit(): void {
-    this.todoList = this.todoAPI.getTodoList();
+    const todoQuery = this.todoAPI.getTodoList();
+    this.subscribeToNewTodo(todoQuery);
+
+    this.todoList = todoQuery.valueChanges.pipe(
+      map(({ data }) => data.todoList)
+    );
+
   }
 
   addTodo(todo: String) {
-    this.todoAPI.addTodo(todo).subscribe((e) => console.log(e));
+    this.todoAPI.addTodo(todo).subscribe();
   }
+
+  subscribeToNewTodo(todoQuery: QueryRef<{ todoList: Array<String> }>) {
+    const document = gql`
+      subscription onTodoAdded {
+        todoAdded
+      }
+    `;
+
+    todoQuery.subscribeToMore<{ todoAdded: Array<String> }>({
+      document,
+      updateQuery: (prev, { subscriptionData }) => {
+        if (!subscriptionData.data) {
+          return prev;
+        }
+        return {
+          todoList: [...subscriptionData.data.todoAdded]
+        };
+      }
+    });
+  }
+
 
 
 }

@@ -9,7 +9,7 @@ class API {
 
   addTodo(todo) {
     this.todoList = [...this.todoList, todo];
-    return true;
+    return this.todoList;
   }
 
 }

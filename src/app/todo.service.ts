@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import gql from 'graphql-tag';
-import { Apollo } from 'apollo-angular';
+import { Apollo, QueryRef } from 'apollo-angular';
 
-import { map } from 'rxjs/operators';
+import { map, take } from 'rxjs/operators';
 import { Observable } from 'rxjs';
 
 @Injectable({
@@ -13,30 +13,30 @@ export class TodoService {
 
   constructor(private apollo: Apollo) { }
 
-  getTodoList(): Observable<Array<String>> {
+  getTodoList(): QueryRef<{ todoList: Array<String> }> {
     const query = gql`
       {
         todoList
       }
-    `
+    `;
 
-    return this.apollo.watchQuery<{ todoList: Array<String> }>({
+    return this.apollo.watchQuery({
       query
-    }).valueChanges.pipe(
-      map(({ data }) => data.todoList)
-    );
+    });
   }
 
-
-  addTodo(todo: String) {
+  addTodo(todo: String): Observable<Boolean> {
     const mutation = gql`
-      mutation todo {
-        addTodo(todo: "${todo}")
+      mutation todo ($todo: String) {
+        addTodo(todo: $todo)
       }
-    `
+    `;
 
     return this.apollo.mutate({
-      mutation
-    })
+      mutation,
+      variables: {
+        todo
+      }
+    }).pipe(take(1));
   }
 }

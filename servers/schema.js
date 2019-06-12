@@ -4,6 +4,10 @@ const typeDefs = gql`type Query {
     todoList: [String]
 }
 
+type Subscription {
+    todoAdded: [String]
+}
+
 type Mutation {
     addTodo(todo: String): Boolean
 }`
